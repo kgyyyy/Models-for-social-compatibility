@@ -2,15 +2,15 @@ DATA_CONFIG:
     DATASET: social_awareDataset
     OBJECT_TYPE: &object_type ['TYPE_VEHICLE']
 
-    DATA_ROOT: 'data/social_aware'
-    train_data_dir: 'data/social_aware/data_train.pkl'
-    raw_train_data_dir: 'data/social_aware/data_raw_train.pkl'
-    val_data_dir: 'data/social_aware/data_val.pkl'
-    raw_val_data_dir: 'data/social_aware/data_raw_val.pkl'
+    DATA_ROOT: 'data/'
+    train_data_dir: 'data/data_train.pkl'
+    raw_train_data_dir: 'data/data_raw_train.pkl'
+    val_data_dir: 'data/data_val.pkl'
+    raw_val_data_dir: 'data/data_raw_val.pkl'
     test_data_dir: None
     raw_test_data_dir: None
     reuse_temp_file: True
-    map_data_dir: 'data/social_aware/map.pkl'
+    map_data_dir: 'data/map.pkl'
     core_num: 24
 
     SAMPLE_INTERVAL: {

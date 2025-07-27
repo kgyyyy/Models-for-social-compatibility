@@ -188,7 +188,7 @@ def train_model(model, optimizer, train_loader, optim_cfg,
                     # 250226修改：因eval_forecasting内没有计算mAP，改为使用minADE
                     # 250307修改：因计算不同步长的指标，改名
                     # 250310修改：mAP是越大越好  minADE是越小越好 之前保存的ckpt有误
-                    if '100_minADE' in tb_dict:
+                    if '100_minADE' or '40_minADE' in tb_dict:
                         best_record_file = eval_output_dir / ('best_eval_record.txt')
 
                         try:
@@ -204,7 +204,8 @@ def train_model(model, optimizer, train_loader, optim_cfg,
 
 
                         with open(best_record_file, 'a') as f:
-                            print(f'epoch_{trained_epoch} minADE {tb_dict["100_minADE"]}', file=f)
+                            # print(f'epoch_{trained_epoch} minADE {tb_dict["100_minADE"]}', file=f)
+                            print(f'epoch_{trained_epoch} minADE {tb_dict["40_minADE"]}', file=f)
 
                         if best_performance == 10000 or tb_dict['100_minADE'] < float(best_performance):
                             ckpt_name = ckpt_save_dir / 'best_model'
@@ -214,7 +215,8 @@ def train_model(model, optimizer, train_loader, optim_cfg,
                             logger.info(f'Save best model to {ckpt_name}')
 
                             with open(best_record_file, 'a') as f:
-                                print(f'best_epoch_{trained_epoch} minADE {tb_dict["100_minADE"]}', file=f)
+                                # print(f'best_epoch_{trained_epoch} minADE {tb_dict["100_minADE"]}', file=f)
+                                print(f'best_epoch_{trained_epoch} minADE {tb_dict["40_minADE"]}', file=f)
                         else:
                             with open(best_record_file, 'a') as f:
                                 print(f'{best_src_data[-1].strip()}', file=f)

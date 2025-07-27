@@ -7,8 +7,8 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-import argoverse
-from argoverse.map_representation.map_api import ArgoverseMap
+# import argoverse
+# from argoverse.map_representation.map_api import ArgoverseMap
 
 LOW_PROB_THRESHOLD_FOR_METRICS = 0.05
 

@@ -9,12 +9,12 @@ import torch
 from torch.utils.data import DataLoader
 from mtr.utils import common_utils
 
-from .waymo.waymo_dataset import WaymoDataset
+# from .waymo.waymo_dataset import WaymoDataset
 # 250221修改：把CRASHdataset加进来
 from .social_aware.social_dataset import social_awareDataset
 
 __all__ = {
-    'WaymoDataset': WaymoDataset,
+    # 'WaymoDataset': WaymoDataset,
     'social_awareDataset': social_awareDataset,
 }
 

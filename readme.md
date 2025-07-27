@@ -1,8 +1,8 @@
-# Agent Models for Social Compatibility
+# Models for Social Compatibility
 
 **Code & Data for Training / Evaluating Social-Aware and Baseline Trajectory Prediction Models**
 
-> This repository provides two trajectory forecasting pipelines (a *social-aware* model and a *baseline* model) implemented on top of the **MTR (Motion TRansformer, https://github.com/sshaoshuai/MTR)** framework. Both inherit the original MTR architecture and training utilities but are trained on *different curated datasets* emphasizing safety-critical, interaction-rich scenarios (e.g., braking and crash-risk situations). Installation, configuration, and launch procedures remain consistent with upstream MTR.
+> This repository provides a *social-aware* model and a *baseline* model implemented on top of the **MTR (Motion TRansformer, https://github.com/sshaoshuai/MTR)** framework. Both inherit the original MTR architecture and training utilities but are trained on *different curated datasets* emphasizing safety-critical, interaction-rich scenarios (e.g., braking and crash-risk situations). Installation, configuration, and launch procedures remain consistent with upstream MTR.
 
 ---
 
@@ -14,12 +14,8 @@
 5. [Configuration](#configuration)  
 6. [Training](#training)  
 7. [Testing / Evaluation](#testing--evaluation)  
-8. [Result Organization & Post-Processing](#result-organization--post-processing)  
-9. [Citation](#citation)  
-10. [Contributing](#contributing)  
-11. [Contact](#contact)  
-12. [License](#license)  
-
+8. [Result Organization & Post-Processing](#result-organization--post-processing)   
+9. [Contact](#contact)
 ---
 
 ## Project Overview
@@ -85,7 +81,6 @@ All raw and processed datasets reside in `data/`. If you need to reprocess:
 ```bash
 python mtr/datasets/social_aware/data_preprocess.py   --input data/baseline_raw_train.pkl   --output data/baseline_train.pkl
 ```
-(Adjust arguments according to your script interface.)
 
 Brake test scenarios (540) are generated via:
 ```bash
@@ -111,12 +106,12 @@ All training scripts live in `tools/`.
 Single-GPU example (baseline):
 ```bash
 cd tools
-python train.py   --launcher none   --cfg_file cfgs/baseline_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_baseline_train
+python train.py   --launcher none   --cfg_file cfgs/social_aware/baseline_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_baseline_train
 ```
 
 Social-aware model:
 ```bash
-python train.py   --launcher none   --cfg_file cfgs/social_aware_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_social_train
+python train.py   --launcher none   --cfg_file cfgs/social_aware/social_aware_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_social_train
 ```
 
 ---
@@ -127,7 +122,7 @@ Use `test.py` with an appropriate config and checkpoint.
 Example:
 ```bash
 cd tools
-python test.py   --launcher none   --cfg_file cfgs/test.yaml   --ckpt ../output/social_aware_train/result_social_aware/ckpt/best_model.pth   --batch_size 32   --extra_tag my_social_test
+python test.py   --launcher none   --cfg_file cfgs/social_aware/test.yaml   --ckpt ../output/social_aware_train/result_social_aware/ckpt/best_model.pth   --batch_size 32   --extra_tag my_social_test
 ```
 
 ---
@@ -156,48 +151,19 @@ output/
 
 ---
 
-## Citation
-If you find this repository useful, please cite:
 
-```bibtex
-@article{kuang2025learning,
-  title   = {Learning Socially Compatible Autonomous Driving under Safety-Critical Scenarios},
-  author  = {Kuang, Gaoyuan and Wang, Qingfan and Shen, Jiajie and Lin, Jinghe and Gao, Xin and Ren, Kun and Wang, Jianqiang and Feng, Shuo and Nie, Bingbing},
-  journal = {Nature Communications},
-  year    = {2025},
-  note    = {under review}
-}
-```
 *Update with volume / pages / DOI when published.*
 
----
-
-## Contributing
-1. Fork the repository.  
-2. Create a feature branch: `git checkout -b feature/my-improvement`  
-3. Commit with clear messages.  
-4. Open a Pull Request (describe motivation, changes, validation).  
-
-Guidelines:
-- Follow PEP8.
-- Include minimal reproducible examples for new features.
-- Keep dependencies lean.
 
 ---
 
 ## Contact
+
 Primary contact: **Bingbing Nie** — `nbb@tsinghua.edu.cn`  
-Project Maintainers: Jinghe Lin
----
-
-## License
-
-```
-MIT License (c) 2025 Authors
-```
+Project Maintainers: Jinghe Lin, Gaoyuan Kuang
 
 
 ---
 
-*Last updated: 2025-07-20*
+*Last updated: 2025-07-27*
 
