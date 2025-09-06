@@ -160,13 +160,13 @@ def main():
         assert args.batch_size % total_gpus == 0, 'Batch size should match the number of gpus'
         args.batch_size = args.batch_size // total_gpus
 
-    # 设置输出目录
+    # Set output directory
     output_dir = cfg.ROOT_DIR / 'output' / cfg.EXP_GROUP_PATH / cfg.TAG / args.extra_tag
     output_dir.mkdir(parents=True, exist_ok=True)
 
     eval_output_dir = output_dir / 'eval'
 
-    if not args.eval_all:  # eval_all参数：检测整个检查点目录下的所有检查点或评估单个检查点
+    if not args.eval_all:  # eval_all parameter: Detect all checkpoints in the entire checkpoint directory or evaluate a single checkpoint
         num_list = re.findall(r'\d+', args.ckpt) if args.ckpt is not None else []
         epoch_id = num_list[-1] if num_list.__len__() > 0 else 'no_number'
         eval_output_dir = eval_output_dir / ('epoch_%s' % epoch_id)

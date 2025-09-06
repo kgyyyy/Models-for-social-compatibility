@@ -27,9 +27,6 @@ def rotate(x, y, angle):
 class social_awareDataset(DatasetTemplate):
     def __init__(self, dataset_cfg, training=True, logger=None):
         super().__init__(dataset_cfg=dataset_cfg, training=training, logger=logger)
-        # 选择数据集路径
-        # 250221修改：目前的代码中training是bool变量，暂时先按这个逻辑修改
-        # 250226修改：路径修改  通过cfg.ROOT_DIR改为绝对路径  把train工作区放到tools文件夹
         # if self.training == 'train':
         #     data_dir = dataset_cfg.train_data_dir
         #     data_raw_dir = dataset_cfg.raw_train_data_dir
@@ -46,14 +43,13 @@ class social_awareDataset(DatasetTemplate):
             data_dir = cfg.ROOT_DIR / dataset_cfg.val_data_dir
             data_raw_dir = cfg.ROOT_DIR / dataset_cfg.raw_val_data_dir
 
-        self.ex_list = []  # 处理后的数据实例
+        self.ex_list = []
         self.cfg = dataset_cfg
 
         self.dim = 3
         self.num_historical_steps = 50
         self.num_future_steps = 60
         self.num_steps = 50 + 60 if self.training in ['train', 'val'] else 50
-        # 250226修改：路径修改  将工作文件夹设到tools下
         if dataset_cfg.reuse_temp_file:
             with open(cfg.ROOT_DIR / data_dir, 'rb') as f:
                 self.ex_list = pickle.load(f)
@@ -65,10 +61,9 @@ class social_awareDataset(DatasetTemplate):
             with open(cfg.ROOT_DIR / dataset_cfg.map_data_dir, 'rb') as f:
                 map = pickle.load(f)
 
-            # 用多进程并行处理数据
-            pbar = tqdm(total=len(files))  # 初始化一个进度条对象 pbar，用于显示数据处理的进度
-            queue = multiprocessing.Queue(dataset_cfg.core_num)  # 初始化一个多进程队列 queue，用于在多进程之间传递数据
-            queue_res = multiprocessing.Queue()  # 初始化另一个多进程队列 queue_res，用于存储处理后的结果
+            pbar = tqdm(total=len(files))
+            queue = multiprocessing.Queue(dataset_cfg.core_num)
+            queue_res = multiprocessing.Queue()
 
             def calc_ex_list(queue, queue_res, dataset_cfg):
                 dis_list = []
@@ -144,22 +139,22 @@ class social_awareDataset(DatasetTemplate):
         # v_x = (data_agent[0, 1:, 0] - data_agent[0, :-1, 0]) / 0.05
         # v_x_ = data_agent[0, :-1, 2]
         # v_x__ = v_x - v_x_
-        # 250219修改：数据结构中最后三列risk相关删除，因此做一些对应修改
-        time_history = 100 + 1  # 险态发生时刻，后100的数据为待预测数据的gt
+
+        time_history = 100 + 1
         obj_trajs_mask = data_agent[:, :, -1].astype(bool)
-        # 训练数据要转化为以自车为中心的相对值
-        center_gt_trajs_world = data_agent[0, time_history:, :4][None, :, :]  # 切片后变为二维矩阵，[None, :, :]增加上新的维度变回三维矩阵
+
+        center_gt_trajs_world = data_agent[0, time_history:, :4][None, :, :]
         center_gt_trajs_mask = obj_trajs_mask[0, time_history:][None, :]
         center_gt_final_valid_idx = np.array([np.arange(201 - time_history)[center_gt_trajs_mask[0]][-1]])
         target_gt_trajs_world = data_agent[1, time_history:, :4][None, :, :]
-        # 250307修改：补上center_objects_velo_world
+
         center_objects_velo_world = data_agent[0, time_history - 1, [2, 3]]
 
-        center_objects_world = data_agent[0, time_history - 1, [0, 1, 5]]  # 初始位置xy与航向角
+        center_objects_world = data_agent[0, time_history - 1, [0, 1, 5]]
         center_objects_world[2] = -center_objects_world[2]
         norm_x, norm_y = rotate(data_agent[:, :, 0] - center_objects_world[0],
                                 data_agent[:, :, 1] - center_objects_world[1],
-                                center_objects_world[2])  # 求相对值并旋转至正
+                                center_objects_world[2])
         norm_theta = data_agent[:, :, 5] + center_objects_world[2]
         norm_vx, norm_vy = rotate(data_agent[:, :, 2], data_agent[:, :, 3], center_objects_world[2])
 
@@ -176,9 +171,9 @@ class social_awareDataset(DatasetTemplate):
                                      norm_vx[:, :, None], norm_vy[:, :, None],
                                      data_agent[:, :, 4:5], data_agent[:, :, 6:9],
                                      np.arange(len(data_agent[0]))[None, :, None].repeat(len(data_agent), axis=0)],
-                                     axis=-1)   # data_agent[:, :, -3:] 需要删掉
+                                     axis=-1)
         data_agent[~obj_trajs_mask] = 0
-        obj_trajs = np.array(data_agent, dtype=np.float32)[None, :, :, :]  # 【？】这里为什么要再增加一个维度
+        obj_trajs = np.array(data_agent, dtype=np.float32)[None, :, :, :]
         obj_trajs_mask = obj_trajs_mask[None, :, :].astype(bool)
 
 
@@ -200,7 +195,7 @@ class social_awareDataset(DatasetTemplate):
             'obj_trajs_last_pos': obj_trajs_last_pos,
             # 'obj_types': obj_types,
             'center_objects_world': center_objects_world[None, :],
-            # 250307修改：补上center_objects_velo_world
+
             'center_objects_velo_world': center_objects_velo_world[None, :],
 
             'obj_trajs_future_state': obj_trajs[:, :, time_history:][:, :, :, [0, 1, 3, 4]],
@@ -213,7 +208,7 @@ class social_awareDataset(DatasetTemplate):
 
             'if_crash': if_crash,
             'crash_time': crash_time,
-            # 250307修改：测试obj_risk_future_state这一项有没有用
+
             'obj_risk_future_state': obj_trajs[:, :, time_history:][:, :, :, -3:],
 
             'target_gt_trajs_world': target_gt_trajs_world,
@@ -221,7 +216,6 @@ class social_awareDataset(DatasetTemplate):
 
         return ret_dict_agent
 
-    # 250307修改：替换新的get_map_features函数
     def old_get_map_features(self, map, center_objects_world):
         num_map_polylines = 8
 
@@ -468,7 +462,6 @@ class social_awareDataset(DatasetTemplate):
         pred_dict_list = []
         for obj_idx in range(num_center_objects):
             single_pred_dict = {
-                # 250225修改：注释掉所有没有的项，对非risk项标注一下
                 'scenario_id': input_dict['scenario_id'][obj_idx],
                 'pred_trajs': pred_trajs_world[obj_idx, :, :, 0:2].cpu().numpy(),
                 'pred_scores': pred_scores[obj_idx, :].cpu().numpy(),
@@ -493,7 +486,6 @@ class social_awareDataset(DatasetTemplate):
                 'map_polylines': map_polylines_world[obj_idx].numpy(),
                 'map_polylines_mask': input_dict['map_polylines_mask'][obj_idx].numpy(),
                 # 'selected_idxs': batch_dict['selected_idxs'][obj_idx].cpu().numpy(),
-                # selected_idxs看起来不是risk相关的项  待进一步考虑
 
                 # 'gt_hist_risks_m': input_dict['obj_trajs'][obj_idx, 0, :, -3].cpu().numpy(),
                 # 'gt_futu_risks_m': input_dict['center_gt_risks'][obj_idx, :, 0].cpu().numpy(),
@@ -501,7 +493,6 @@ class social_awareDataset(DatasetTemplate):
             }
             pred_dict_list.append(single_pred_dict)
 
-        # 250228修改：增加预测轨迹的可视化
         if epoch_id in [190]:
             # pred_line_idx = np.argmax(pred_dict_list[plot_idx]['pred_scores'])
             # pred_line = pred_dict_list[plot_idx]['pred_trajs'][pred_line_idx, :, :]
@@ -529,7 +520,6 @@ class social_awareDataset(DatasetTemplate):
 
         return pred_dict_list
 
-    # 250225修改：尝试模仿waymo_dataset，调用eval_forcasting内的函数，编写evaluation
     def evaluation(self, pred_dicts, output_path=None, eval_method='social_aware', **kwargs):
         if eval_method == 'social_aware':
             from .eval_forecasting import social_aware_evaluation

@@ -172,9 +172,7 @@ def train_model(model, optimizer, train_loader, optim_cfg,
 
             # eval the model
             if test_loader is not None and (trained_epoch % ckpt_save_interval == 0 or trained_epoch in [1, 2, 4] or trained_epoch > total_epochs - 10):
-                # 250226修改：
-                # from eval_utils.eval_utils import eval_one_epoch
-                from tools.eval_utils.eval_utils import eval_one_epoch
+                from eval_utils.eval_utils import eval_one_epoch
 
                 pure_model = model
                 torch.cuda.empty_cache()
@@ -185,9 +183,6 @@ def train_model(model, optimizer, train_loader, optim_cfg,
                 if cfg.LOCAL_RANK == 0:
                     for key, val in tb_dict.items():
                         tb_log.add_scalar('eval/' + key, val, trained_epoch)
-                    # 250226修改：因eval_forecasting内没有计算mAP，改为使用minADE
-                    # 250307修改：因计算不同步长的指标，改名
-                    # 250310修改：mAP是越大越好  minADE是越小越好 之前保存的ckpt有误
                     if '100_minADE' or '40_minADE' in tb_dict:
                         best_record_file = eval_output_dir / ('best_eval_record.txt')
 
@@ -207,7 +202,7 @@ def train_model(model, optimizer, train_loader, optim_cfg,
                             # print(f'epoch_{trained_epoch} minADE {tb_dict["100_minADE"]}', file=f)
                             print(f'epoch_{trained_epoch} minADE {tb_dict["40_minADE"]}', file=f)
 
-                        if best_performance == 10000 or tb_dict['100_minADE'] < float(best_performance):
+                        if best_performance == 10000 or tb_dict['40_minADE'] < float(best_performance):
                             ckpt_name = ckpt_save_dir / 'best_model'
                             save_checkpoint(
                                 checkpoint_state(model, epoch=cur_epoch, it=accumulated_iter), filename=ckpt_name,

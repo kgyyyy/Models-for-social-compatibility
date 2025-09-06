@@ -71,7 +71,7 @@ def build_optimizer(model, opt_cfg):
             [each[1] for each in model.named_parameters()],
             lr=opt_cfg.LR, weight_decay=opt_cfg.get('WEIGHT_DECAY', 0)
         )
-    elif opt_cfg.OPTIMIZER == 'AdamW':  # 带有权重衰减的 Adam 优化器
+    elif opt_cfg.OPTIMIZER == 'AdamW':  # Adam optimizer with weight decay
         optimizer = torch.optim.AdamW(model.parameters(), lr=opt_cfg.LR, weight_decay=opt_cfg.get('WEIGHT_DECAY', 0))
     else:
         assert False
@@ -79,7 +79,6 @@ def build_optimizer(model, opt_cfg):
     return optimizer
 
 
-# 【？】学习率调度器
 def build_scheduler(optimizer, dataloader, opt_cfg, total_epochs, total_iters_each_epoch, last_epoch):
     decay_steps = [x * total_iters_each_epoch for x in opt_cfg.get('DECAY_STEP_LIST', [5, 10, 15, 20])]
     def lr_lbmd(cur_epoch):
@@ -110,7 +109,6 @@ def build_scheduler(optimizer, dataloader, opt_cfg, total_epochs, total_iters_ea
 
 def main():
     args, cfg = parse_config()
-    # 根据 --launcher 参数初始化分布式训练环境
     if args.launcher == 'none':
         dist_train = False
         total_gpus = 1
@@ -123,27 +121,22 @@ def main():
         )
         dist_train = True
 
-    # 设置batch size
     if args.batch_size is None:
         args.batch_size = cfg.OPTIMIZATION.BATCH_SIZE_PER_GPU
     else:
         assert args.batch_size % total_gpus == 0, 'Batch size should match the number of gpus'
         args.batch_size = args.batch_size // total_gpus
 
-    # 设置epochs
     args.epochs = cfg.OPTIMIZATION.NUM_EPOCHS if args.epochs is None else args.epochs
 
-    # 固定随机种子
     if args.fix_random_seed:
         common_utils.set_random_seed(666)
 
-    # 创建输出目录
     output_dir = cfg.ROOT_DIR / 'output' / cfg.EXP_GROUP_PATH / cfg.TAG / args.extra_tag
     ckpt_dir = output_dir / 'ckpt'
     output_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    # log记录器
     log_file = output_dir / ('log_train_%s.txt' % datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     logger = common_utils.create_logger(log_file, rank=cfg.LOCAL_RANK)
 
@@ -161,7 +154,6 @@ def main():
         os.system('cp %s %s' % (args.cfg_file, output_dir))
     tb_log = SummaryWriter(log_dir=str(output_dir / 'tensorboard')) if cfg.LOCAL_RANK == 0 else None
 
-    # 构建dataloader
     train_set, train_loader, train_sampler = build_dataloader(
         dataset_cfg=cfg.DATA_CONFIG,
         batch_size=args.batch_size,
@@ -173,7 +165,6 @@ def main():
         add_worker_init_fn=args.add_worker_init_fn,
     )
 
-    # 构建模型
     model = model_utils.MotionTransformer(config=cfg.MODEL)
     if not args.without_sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
@@ -181,12 +172,10 @@ def main():
 
     optimizer = build_optimizer(model, cfg.OPTIMIZATION)
 
-    # 加载检查点或预训练模型
     # load checkpoint if it is possible
     start_epoch = it = 0
     last_epoch = -1
 
-    # 构建学习率调度器
     if args.pretrained_model is not None:
         model.load_params_from_file(filename=args.pretrained_model, to_cpu=dist_train, logger=logger)
 
@@ -218,7 +207,6 @@ def main():
         total_iters_each_epoch=len(train_loader), last_epoch=last_epoch
     )
 
-    # 训练模式设置
     model.train()  # before wrap to DistributedDataParallel to support to fix some parameters
 
     if dist_train:
@@ -227,7 +215,6 @@ def main():
     num_total_params = sum([x.numel() for x in model.parameters()])
     logger.info(f'Total number of parameters: {num_total_params}')
 
-    # 构建测试数据加载器
     test_set, test_loader, sampler = build_dataloader(
         dataset_cfg=cfg.DATA_CONFIG,
         batch_size=args.batch_size,

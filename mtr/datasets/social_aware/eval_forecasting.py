@@ -13,7 +13,6 @@ import numpy as np
 LOW_PROB_THRESHOLD_FOR_METRICS = 0.05
 
 
-# 250226修改：去掉与city_name相关的所有信息
 def get_ade(forecasted_trajectory: np.ndarray, gt_trajectory: np.ndarray) -> float:
     """Compute Average Displacement Error.
 
@@ -91,7 +90,7 @@ def get_displacement_errors_and_miss_rate(
     min_fde, prob_min_fde, brier_min_fde = [], [], []
     n_misses, prob_n_misses = [], []
     for k, v in gt_trajectories.items():
-        # 250312修改：增加crash_flags参数，根据该参数划分horizon
+
         if crash_flags[k]:
             valid_future = ~((v[:, 0] == 0) & (v[:, 1] == 0))
             eval_horizon = np.sum(valid_future)
@@ -144,7 +143,6 @@ def get_displacement_errors_and_miss_rate(
             )
             brier_min_fde.append((1 - pruned_probabilities[min_idx]) ** 2 + curr_min_fde)
 
-    # 250308修改：key名增加步长以区分
     metric_results[f"{horizon}_minADE"] = sum(min_ade) / len(min_ade)
     metric_results[f"{horizon}_minFDE"] = sum(min_fde) / len(min_fde)
     metric_results[f"{horizon}_MR"] = sum(n_misses) / len(n_misses)
@@ -223,8 +221,6 @@ def compute_forecasting_metrics(
         miss_threshold,
         forecasted_probabilities,
     )
-    # 250226修改：没有地图文件记录drivable_area  放弃该指标
-    # metric_results["DAC"] = get_drivable_area_compliance(forecasted_trajectories, max_n_guesses)
 
     print("------------------------------------------------")
     print(f"Prediction Horizon : {horizon}, Max #guesses (K): {max_n_guesses}")
@@ -232,7 +228,6 @@ def compute_forecasting_metrics(
     return metric_results
 
 
-# 250225修改：格式整理便于打印
 def format_metric_results(metric_results):
     """
     将 metric_results 转化为可打印输出的字符串。
@@ -247,7 +242,7 @@ def format_metric_results(metric_results):
     metric_result_str += "----------------------------------------\n"
 
     for key, value in metric_results.items():
-        metric_result_str += f"{key}: {value:.4f}\n"  # 保留 4 位小数
+        metric_result_str += f"{key}: {value:.4f}\n"
 
     metric_result_str += "----------------------------------------\n"
     return metric_result_str
@@ -258,45 +253,37 @@ def social_aware_evaluation(pred_dicts):
     评估预测轨迹，调用 eval_forecasting.py 中的评估指标，并返回结果字典。
 
     """
-    # 初始化用于评估的输入数据结构
     forecasted_trajectories = {}
     gt_trajectories = {}
     forecasted_probabilities = {}
     crash_flags = {}
-    # 遍历 pred_dicts，提取预测轨迹和真实轨迹
+
     for idx, pred_dict in enumerate(pred_dicts):
-        # 提取预测轨迹和真实轨迹
         forecasted_trajectories[idx] = pred_dict['pred_trajs']  # 形状 (6, 100, 2)
         gt_trajectories[idx] = pred_dict['gt_trajs']  # 形状 (100, 2)
 
-        # 提取预测轨迹的概率
         forecasted_probabilities[idx] = pred_dict['pred_scores']  # 形状 (6,)
 
-        # 提取if_crash标签
         crash_flags[idx] = pred_dict['if_crash']
 
-    # 250308修改：分别对40步长和100步长内都计算一次指标
-    # 250312修改：增加对碰撞数据的适应，具体为如发生碰撞，以碰撞点截取horizon，无碰撞gt则计算40
-    # 调用 compute_forecasting_metrics 计算评估指标
     metric_results = get_displacement_errors_and_miss_rate(
         crash_flags,
         forecasted_trajectories=forecasted_trajectories,
         gt_trajectories=gt_trajectories,
         max_guesses=6,
-        horizon=40,  # 预测时间步长为 40
+        horizon=40,
         miss_threshold=3,
         forecasted_probabilities=forecasted_probabilities,
     )
     # metric_results2 = compute_forecasting_metrics(
     #     forecasted_trajectories=forecasted_trajectories,
     #     gt_trajectories=gt_trajectories,
-    #     max_n_guesses=6,  # 假设最多允许 6 个预测轨迹
-    #     horizon=100,  # 预测时间步长为 100
-    #     miss_threshold=3,  # 未命中阈值设为 3
+    #     max_n_guesses=6,
+    #     horizon=100,
+    #     miss_threshold=3,
     #     forecasted_probabilities=forecasted_probabilities,
     # )
     # metric_results = {**metric_results1, **metric_results2}
     metric_result_str = format_metric_results(metric_results)
 
-    # 返回结果字典
     return metric_results, metric_result_str

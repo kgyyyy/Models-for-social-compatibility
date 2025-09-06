@@ -34,41 +34,29 @@ This repository extends **MTR** with:
 ~/ 
 ├── data/
 │   ├── baseline_raw_train.pkl
-│   ├── baseline_train.pkl
-│   ├── brake_test_data_raw.pkl
-│   ├── brake_test_data.pkl
-│   ├── crash_data_raw_test.pkl
-│   ├── crash_data_test.pkl
-│   ├── data_raw_train.pkl
-│   ├── data_raw_val.pkl
-│   ├── data_train.pkl
-│   ├── data_val.pkl
+│   ├── ...
 │   ├── map.pkl
 │   ├── test_scenario_generation.py
 ├── mtr/
 │   ├── datasets/
 │   │   ├── social_aware/
-│   │   │   ├── map/
-│   │   │   ├── data_preprocess.py
-│   │   │   ├── eval_forecasting.py
-│   │   │   ├── social_dataset.py
-│   │   │   ├── utils.py
-│   │   ├── __init__.py
-│   │   ├── dataset.py
-├── output/
+├── output/  # Content of the output folder is shown and introduced below
 ├── tools/
+│   ├── cfgs/
+│   ├── eval_utils/
+│   ├── train_utils/
+│   ├── test.py
+│   ├── train.py
 ├── readme.md
+└── requirments.txt
 └── setup.py
 ```
-
-Use `data_preprocess.py` to transform each `*_raw_*.pkl` file into model-compatible inputs. The `data/` folder already contains preprocessed data for immediate use.
-
 ---
 
 
 ## Installation
 
-
+Create a conda environment suitable for your hardware and install PyTorch. Then install the dependencies as follows:
 ```bash
 pip install -r requirements.txt
 python setup.py develop
@@ -77,10 +65,8 @@ python setup.py develop
 ---
 
 ## Dataset Preparation
-All raw and processed datasets reside in `data/`. If you need to reprocess:
-```bash
-python mtr/datasets/social_aware/data_preprocess.py   --input data/baseline_raw_train.pkl   --output data/baseline_train.pkl
-```
+After feeding the `*_raw_*.pkl` files into the model, the model will preprocess and organize them, generating corresponding cache files.
+You can set the `reuse_temp_file` parameter in the configuration file to allow the model to directly read the cache files. All data files and their corresponding cache files are already provided in the `data/` folder.
 
 Brake test scenarios (540) are generated via:
 ```bash
@@ -101,18 +87,15 @@ Edit (e.g.) `baseline_train.yaml` or `social_aware_train.yaml` prior to launchin
 ---
 
 ## Training
-All training scripts live in `tools/`.
+All training scripts live in `tools/`. Specify the configuration file and other parameters to launch training via the `train.py` script.
 
 Single-GPU example (baseline):
 ```bash
 cd tools
-python train.py   --launcher none   --cfg_file cfgs/social_aware/baseline_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_baseline_train
+python train.py   --launcher none   --cfg_file cfgs/baseline_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_baseline_train
 ```
 
-Social-aware model:
-```bash
-python train.py   --launcher none   --cfg_file cfgs/social_aware/social_aware_train.yaml   --batch_size 32   --epochs 100   --extra_tag my_social_train
-```
+Evaluation results, checkpoints, and logs will be saved under `output/cofing_file_name/extra_tag`. For example, the results from the command above will be saved in `output/baseline_train/my_baseline_train`.
 
 ---
 
@@ -122,13 +105,13 @@ Use `test.py` with an appropriate config and checkpoint.
 Example:
 ```bash
 cd tools
-python test.py   --launcher none   --cfg_file cfgs/social_aware/test.yaml   --ckpt ../output/social_aware_train/result_social_aware/ckpt/best_model.pth   --batch_size 32   --extra_tag my_social_test
+python test.py   --launcher none   --cfg_file cfgs/test.yaml   --ckpt ../output/social_aware_train/result_social_aware/ckpt/best_model.pth   --batch_size 32   --extra_tag my_social_test
 ```
 
 ---
 
 ## Result Organization & Post-Processing
-Results are written to `output/`:
+Results from training or testing are written to `output/`:
 
 ```
 output/
@@ -147,8 +130,12 @@ output/
 ├── results_process.py
 ```
 
-`results_process.py` consolidates scenario-level predictions into unified dictionaries (model outputs + metadata).
+Three folders, named the same as the configuration files in `tools/cfgs/`, store the result files and log files from the training or testing launched with the corresponding configuration file.
+The path for evaluation result files is `output/cofing_file_name/extra_tag/eval/eval_with_train/epoch_x/result.pkl`, for example: `output/baseline_train/result_baseline/eval/eval_with_train/epoch_200/result.pkl`
+The path for checkpoint files is `output/cofing_file_name/extra_tag/ckpt/best_model.pth`, for example: `output/baseline_train/result_baseline/ckpt/best_model.pth`
 
+The `results_process.py` script can be used to combine the prediction results of the baseline and social-aware models on the same test set into a single file. Before using results_process.py, please modify the paths of the prediction result files that need to be combined in the code.
+The three `.pkl` files in the `output/` folder are the prediction results of the two models on the brake test set, the collision test set, and the non-collision validation set, respectively.
 ---
 
 

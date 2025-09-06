@@ -42,7 +42,6 @@ def eval_one_epoch(cfg, model, dataloader, epoch_id, logger, dist_test=False, sa
     for i, batch_dict in enumerate(dataloader):
         with torch.no_grad():
             batch_pred_dicts = model(batch_dict)
-            # 250228修改：为可视化，增加epoch_id参数
             final_pred_dicts = dataset.generate_prediction_dicts(batch_pred_dicts, epoch_id, output_path=final_output_dir if save_to_file else None)
             # final_pred_dicts = dataset.generate_prediction_dicts(batch_pred_dicts, output_path=final_output_dir if save_to_file else None)
             pred_dicts += final_pred_dicts
